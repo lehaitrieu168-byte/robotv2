@@ -54,7 +54,7 @@ Chi tiết trong [`plans/260710-0916-emo-robot-face-audio-streaming/`](plans/260
 | 06 | Tương tác: cảm ứng + quang trở | 3h |
 | 07 | Lắp vào vỏ 3D | 5h |
 | 08 | *(Dự phòng)* Wi-Fi + PWA nếu A2DP thất bại | 8h |
-| 09 | Báo thức: giờ NTP, mắt "bừng tỉnh", chuông WAV | 5h |
+| 09 | Báo thức: giờ NTP, nhiều báo thức, mắt "bừng tỉnh", giọng nói nhắc nhở (tự thu, phát ngẫu nhiên) | 6h |
 
 ## Rủi ro đã biết
 

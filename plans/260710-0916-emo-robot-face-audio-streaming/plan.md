@@ -39,7 +39,7 @@ Robot desktop kiểu EMO (Living.AI): 1 màn TFT hiển thị 2 mắt biểu c�
 | 06 | Tương tác: cảm ứng XPT2046 + LDR onboard → trigger cảm xúc | [phase-06](./phase-06-tuong-tac-cam-ung-xpt2046-quang-tro-ldr.md) | pending | 3h |
 | 07 | Lắp vào vỏ 3D đã in: cố định CYD, gắn loa, chống chạm chập (nguồn USB) | [phase-07](./phase-07-lap-rap-vao-vo-3d-da-in.md) | pending | 4h |
 | 08 | (Optional) Fallback Wi-Fi UDP/WebSocket + PWA nếu A2DP mic-through fail | [phase-08](./phase-08-optional-fallback-wifi-udp-websocket-pwa.md) | pending | 8h |
-| 09 | Báo thức: giờ NTP (sync lúc boot) → mắt "wake" + WAV; đặt/tắt bằng cảm ứng | [phase-09](./phase-09-bao-thuc-dong-ho-ntp.md) | pending | 5h |
+| 09 | Báo thức: giờ NTP (sync boot) → **nhiều** báo thức + mắt "wake" + **giọng nói user thu (phát ngẫu nhiên)**; đặt/xoá bằng cảm ứng | [phase-09](./phase-09-bao-thuc-dong-ho-ntp.md) | pending | 6h |
 
 ## Dependencies
 - **P1 chặn tất cả.** Cổng quyết định 1: verify A2DP → FAIL thì P8 thay P4. Cổng quyết định 2: CYD vừa vỏ 3D không.
@@ -65,3 +65,5 @@ Robot desktop kiểu EMO (Living.AI): 1 màn TFT hiển thị 2 mắt biểu c�
 2. **Kích thước khoang vỏ 3D** vs CYD (~86×50mm)? Có sẵn lỗ loa/ô LDR/khe USB chưa?
 3. Shop bán CYD có tặng kèm loa + dây JST 1.25 không? Loa mấy W/Ω?
 4. Chiều kênh DAC LEFT/RIGHT ↔ GPIO25/26 (test chạm màn khi phát nhạc)?
+5. **Wi-Fi 2.4GHz** cho NTP (P9)? (ESP32 không bắt 5GHz.) ⟵ cần trước khi làm báo thức.
+> P9 đã CHỐT với user: **nhiều báo thức (tối đa 4), giọng nói tự thu phát ngẫu nhiên** (không phải chuông). Chi tiết trong phase-09.

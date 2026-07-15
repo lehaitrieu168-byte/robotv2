@@ -26,7 +26,7 @@
 - Hàm `playWav(path)` gọi lại nhiều lần OK.
 - **Cảm ứng vẫn sống khi phát nhạc** (không chiếm GPIO25).
 **Non-functional**
-- Không hàn. Chấp nhận chất âm 8-bit ở v1. Module audio < 200 dòng.
+- Không hàn. Chấp nhận chất âm 8-bit ở v1. Module audio < 200 dòng.e
 
 ## 5. Architecture
 
