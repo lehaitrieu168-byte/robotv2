@@ -9,14 +9,20 @@ from __future__ import annotations
 
 import os
 import tempfile
+from collections import deque
+from urllib.parse import quote
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from fastapi.responses import JSONResponse, Response
 
+from . import chat_brain
 from .config import settings
 from .tts_engine import VALID_STYLES, engine
 
 router = APIRouter(prefix="/api")
+
+# Lịch sử hội thoại ngắn cho robot (1 robot, trong bộ nhớ). Giữ vài lượt gần nhất.
+_chat_history: deque = deque(maxlen=8)
 
 
 def _check_text(text: str) -> str:
@@ -66,6 +72,52 @@ def say(text: str, voice: str = "", style: str = "") -> Response:
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Lỗi tổng hợp giọng: {exc}")
     return Response(content=wav, media_type="audio/wav")
+
+
+def _run_chat(user_text: str) -> Response:
+    """LLM nghĩ câu trả lời -> VieNeu-TTS đọc -> trả WAV. Kèm text ở header (URL-encode)."""
+    user_text = (user_text or "").strip()
+    if not user_text:
+        raise HTTPException(status_code=400, detail="Không nghe/nhận được nội dung.")
+    try:
+        reply = chat_brain.chat(user_text, list(_chat_history))
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Lỗi LLM: {exc}")
+    _chat_history.append({"role": "user", "content": user_text})
+    _chat_history.append({"role": "assistant", "content": reply})
+    print(f"[CHAT] Ban: {user_text}\n[CHAT] EMO: {reply}", flush=True)
+    try:
+        wav = engine.synthesize(reply, engine.default_voice(), None)
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Lỗi tổng hợp giọng: {exc}")
+    return Response(
+        content=wav,
+        media_type="audio/wav",
+        headers={"X-User-Text": quote(user_text), "X-Reply-Text": quote(reply)},
+    )
+
+
+@router.get("/chat")
+def chat_text(text: str) -> Response:
+    """Chat bằng CHỮ (để test): /api/chat?text=... -> WAV câu trả lời."""
+    return _run_chat(text)
+
+
+@router.post("/chat-audio")
+async def chat_audio(audio: UploadFile = File(...)) -> Response:
+    """Chat bằng GIỌNG (robot gửi audio mic): STT -> LLM -> TTS -> WAV."""
+    raw = await audio.read()
+    try:
+        user_text = chat_brain.transcribe(raw, audio.filename or "speech.wav")
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Lỗi nhận dạng giọng: {exc}")
+    return _run_chat(user_text)
+
+
+@router.post("/chat-reset")
+def chat_reset() -> JSONResponse:
+    _chat_history.clear()
+    return JSONResponse({"status": "cleared"})
 
 
 @router.post("/tts")

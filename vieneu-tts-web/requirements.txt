@@ -2,6 +2,8 @@
 fastapi>=0.110
 uvicorn[standard]>=0.29
 python-multipart>=0.0.9
+httpx>=0.27          # gọi API Groq (STT + LLM)
+python-dotenv>=1.0   # nạp .env (GROQ_API_KEY)
 
 # Model TTS tiếng Việt (CPU chạy torch-free qua ONNX Runtime)
 vieneu

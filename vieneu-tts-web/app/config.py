@@ -7,6 +7,13 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass
 
+try:
+    from dotenv import load_dotenv
+
+    load_dotenv()  # nạp biến từ file .env (nếu có) — vd GROQ_API_KEY
+except ImportError:
+    pass
+
 
 def _get_bool(name: str, default: bool) -> bool:
     val = os.getenv(name)
@@ -31,6 +38,18 @@ class Settings:
 
     # Nạp sẵn model lúc khởi động (nên bật khi demo với robot để request đầu không timeout)
     preload_model: bool = _get_bool("PRELOAD_MODEL", False)
+
+    # ---- Bộ não trò chuyện (Groq) ----
+    groq_api_key: str = os.getenv("GROQ_API_KEY", "")
+    groq_stt_model: str = os.getenv("GROQ_STT_MODEL", "whisper-large-v3-turbo")
+    groq_llm_model: str = os.getenv("GROQ_LLM_MODEL", "llama-3.3-70b-versatile")
+    chat_system_prompt: str = os.getenv(
+        "CHAT_SYSTEM_PROMPT",
+        "Bạn tên là Vivi, một robot nhỏ dễ thương, trò chuyện thân thiện, vui vẻ, hài hước nhẹ. "
+        "Khi được chào thì tự giới thiệu mình là Vivi. "
+        "LUÔN trả lời NGẮN GỌN bằng tiếng Việt, tối đa 1-2 câu, giọng gần gũi. "
+        "Không dùng emoji, không markdown, chỉ nói như đang trò chuyện.",
+    )
 
     # Giới hạn để tránh lạm dụng khi mở ra mạng
     max_chars: int = int(os.getenv("MAX_CHARS", "1000"))
