@@ -26,6 +26,10 @@ bin/
 .DS_Store
 *.pem
 
+# Firmware secrets (WiFi creds, API keys) — never commit
+firmware/**/secrets.h
+secrets.h
+
 # debug
 npm-debug.log*
 yarn-debug.log*

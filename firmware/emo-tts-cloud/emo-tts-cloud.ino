@@ -47,7 +47,8 @@ void enqueueText(const String& text, const String& voice) {
 
 // Percent-encode chuỗi UTF-8 để nhét vào URL (?text=...). Byte tiếng Việt (>127) -> %XX.
 String urlEncode(const String& s) {
-  static const char* HEX = "0123456789ABCDEF";
+  // Lưu ý: KHÔNG đặt tên biến là HEX — Arduino đã có macro HEX (dùng cho Serial.print).
+  static const char* HEXDIG = "0123456789ABCDEF";
   String out;
   for (size_t i = 0; i < s.length(); i++) {
     uint8_t c = (uint8_t)s[i];
@@ -56,8 +57,8 @@ String urlEncode(const String& s) {
       out += (char)c;
     } else {
       out += '%';
-      out += HEX[c >> 4];
-      out += HEX[c & 0x0F];
+      out += HEXDIG[c >> 4];
+      out += HEXDIG[c & 0x0F];
     }
   }
   return out;

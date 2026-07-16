@@ -17,15 +17,23 @@
   #define WIFI_PASSWORD "MAT_KHAU_WIFI"
 #endif
 
-// ---- Chân I2S nối tới MAX98357A ----
-// Đổi cho khớp dây bạn đã cắm.
-// TRÁNH các chân flash/PSRAM (GPIO26–37) trên S3 N16R8, và chân nạp (0/3/45/46).
-#define I2S_BCLK 5   // MAX98357A: BCLK
-#define I2S_LRC  6   // MAX98357A: LRC (WS / LRCLK)
-#define I2S_DOUT 7   // MAX98357A: DIN
+// ============================================================
+//  ÂM THANH — board ES3C28P dùng codec ES8311 (I2C) + amp FM8002E, KHÔNG phải MAX98357A.
+//  Chân cố định theo tài liệu board (lcdwiki / BSP ngttai).
+// ============================================================
+#define I2S_MCLK 4    // ES8311: MCLK (master clock)
+#define I2S_BCLK 5    // ES8311: BCLK (bit clock)
+#define I2S_DOUT 6    // ES8311: DSDIN (data ra loa)
+#define I2S_LRC  7    // ES8311: LRCK (word select)
+#define I2S_DIN  8    // ES8311: ASDOUT (data từ mic — chưa dùng)
 
-// ---- Âm lượng: 0..21 ----
-#define TTS_VOLUME 12
+#define PIN_AMP_EN   1    // Bật amp: mức THẤP = bật (active low)
+#define ES8311_SDA   16   // I2C của codec (chung bus với cảm ứng)
+#define ES8311_SCL   15
+#define ES8311_VOL   80   // âm lượng analog codec 0..100
+
+// ---- Âm lượng số của thư viện: 0..21 ----
+#define TTS_VOLUME 18
 
 // ============================================================
 //  CHỌN NGUỒN TTS
@@ -36,8 +44,8 @@
 
 // ---- Server VieNeu-TTS (dùng khi USE_VIENEU = 1) ----
 // IP của máy/VPS đang chạy `docker compose up` trong thư mục vieneu-tts-web.
-// Robot và máy chủ phải cùng mạng LAN. (Đã điền sẵn IP máy bạn — đổi nếu IP thay đổi.)
-#define VIENEU_HOST "192.168.2.13"
+// Robot và máy chủ phải cùng mạng LAN. (IP máy bạn trên WiFi "lht".)
+#define VIENEU_HOST "192.168.43.37"
 #define VIENEU_PORT 8000
 // Giọng: để trống "" = giọng mặc định của server.
 // Xem danh sách id giọng tại: http://VIENEU_HOST:VIENEU_PORT/api/voices
