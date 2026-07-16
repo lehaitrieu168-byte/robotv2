@@ -67,6 +67,7 @@ Sao chép `.env.example` → `.env` và chỉnh. Xem bảng:
 |---|---|---|
 | GET | `/api/health` | Trạng thái + cấu hình |
 | GET | `/api/voices` | Danh sách giọng dựng sẵn |
+| GET | `/api/say` | Query: `text`, `voice?`, `style?` → trả WAV (cho ESP32) |
 | POST | `/api/tts` | Form: `text`, `voice`, `style` → trả WAV |
 | POST | `/api/clone` | Form: `text`, `ref_audio` (file), `denoise` → trả WAV |
 
@@ -92,6 +93,32 @@ vieneu-tts-web/
 ├── requirements.txt
 └── .env.example
 ```
+
+## Kết nối robot ESP32 (demo)
+
+Robot ESP32-S3 (firmware [`firmware/emo-tts-cloud`](../firmware/emo-tts-cloud)) phát giọng
+qua loa MAX98357A bằng cách **stream WAV từ endpoint `GET /api/say`** của server này.
+
+Các bước demo:
+
+1. Chạy server (nên bật preload để lần gọi đầu không chờ):
+   ```bash
+   PRELOAD_MODEL=true docker compose up --build
+   # docker-compose.yml đã đặt sẵn PRELOAD_MODEL=true
+   ```
+2. Xem IP máy chủ trong LAN (vd `192.168.1.10`) và thử endpoint:
+   ```
+   http://192.168.1.10:8000/api/say?text=Xin%20ch%C3%A0o
+   ```
+3. Trong [`firmware/emo-tts-cloud/config.h`](../firmware/emo-tts-cloud/config.h) đặt:
+   ```c
+   #define USE_VIENEU  1
+   #define VIENEU_HOST "192.168.1.10"   // IP máy chủ
+   #define VIENEU_PORT 8000
+   ```
+4. Nạp firmware, mở web nhỏ trên ESP32, gõ chữ → robot đọc bằng giọng VieNeu-TTS.
+
+> Robot và máy chủ phải cùng mạng LAN. Đặt `USE_VIENEU 0` để quay lại Google TTS.
 
 ## GPU (tùy chọn, tăng tốc)
 

@@ -2,14 +2,25 @@
 from __future__ import annotations
 
 import os
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
 from .config import settings
 from .routes import router
+from .tts_engine import engine
 
-app = FastAPI(title="VieNeu-TTS Web", version="1.0.0")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Nạp sẵn model nếu PRELOAD_MODEL=true (giúp lần gọi đầu từ robot không bị chờ lâu)
+    if settings.preload_model:
+        engine.warmup()
+    yield
+
+
+app = FastAPI(title="VieNeu-TTS Web", version="1.0.0", lifespan=lifespan)
 app.include_router(router)
 
 # Phục vụ frontend tĩnh tại "/" (index.html, style.css, app.js)

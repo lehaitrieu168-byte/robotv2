@@ -52,6 +52,22 @@ def voices() -> JSONResponse:
         raise HTTPException(status_code=500, detail=f"Không nạp được model: {exc}")
 
 
+@router.get("/say")
+def say(text: str, voice: str = "", style: str = "") -> Response:
+    """Endpoint GET đơn giản cho thiết bị nhúng (ESP32 `connecttohost`).
+
+    Gọi: /api/say?text=Xin%20ch%C3%A0o  -> trả thẳng WAV.
+    `voice` để trống -> dùng giọng mặc định của model.
+    """
+    text = _check_text(text)
+    try:
+        chosen = voice.strip() or engine.default_voice()
+        wav = engine.synthesize(text=text, voice=chosen, style=(style.strip() or None))
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Lỗi tổng hợp giọng: {exc}")
+    return Response(content=wav, media_type="audio/wav")
+
+
 @router.post("/tts")
 def tts(
     text: str = Form(...),

@@ -1,8 +1,10 @@
 // ============================================================
-//  EMO robot — Text-to-Speech tiếng Việt (đám mây, gõ chữ tùy ý)
+//  EMO robot — Text-to-Speech tiếng Việt (gõ chữ tùy ý)
 //  Board : ESP32-S3 N16R8 (16MB flash + 8MB PSRAM)
 //  Audio : I2S -> MAX98357A -> loa
-//  TTS   : Google Translate TTS qua thư viện ESP32-audioI2S
+//  TTS   : USE_VIENEU=1 -> server VieNeu-TTS tự host (giọng Việt tự nhiên)
+//          USE_VIENEU=0 -> Google Translate TTS
+//          Cả hai đều stream qua thư viện ESP32-audioI2S
 //  Nhập  : trang web nhỏ ngay trên ESP32 (mở bằng điện thoại/PC)
 // ============================================================
 #include <WiFi.h>
@@ -39,6 +41,36 @@ void enqueueText(const String& text) {
   }
 }
 
+// Percent-encode chuỗi UTF-8 để nhét vào URL (?text=...). Byte tiếng Việt (>127) -> %XX.
+String urlEncode(const String& s) {
+  static const char* HEX = "0123456789ABCDEF";
+  String out;
+  for (size_t i = 0; i < s.length(); i++) {
+    uint8_t c = (uint8_t)s[i];
+    if ((c >= '0' && c <= '9') || (c >= 'A' && c <= 'Z') ||
+        (c >= 'a' && c <= 'z') || c == '-' || c == '_' || c == '.' || c == '~') {
+      out += (char)c;
+    } else {
+      out += '%';
+      out += HEX[c >> 4];
+      out += HEX[c & 0x0F];
+    }
+  }
+  return out;
+}
+
+// Phát một đoạn text: qua server VieNeu-TTS (stream WAV) hoặc Google TTS.
+void speakChunk(const String& chunk) {
+#if USE_VIENEU
+  String url = String("http://") + VIENEU_HOST + ":" + VIENEU_PORT +
+               "/api/say?voice=" + urlEncode(VIENEU_VOICE) +
+               "&text=" + urlEncode(chunk);
+  audio.connecttohost(url.c_str());
+#else
+  audio.connecttospeech(chunk.c_str(), TTS_LANG);
+#endif
+}
+
 void handleRoot() { server.send_P(200, "text/html; charset=utf-8", INDEX_HTML); }
 
 void handleSay() {
@@ -72,6 +104,11 @@ void setup() {
   // Khởi tạo I2S -> MAX98357A
   audio.setPinout(I2S_BCLK, I2S_LRC, I2S_DOUT);
   audio.setVolume(TTS_VOLUME);          // 0..21
+#if USE_VIENEU
+  Serial.printf("[TTS] Nguon: VieNeu-TTS server http://%s:%d\n", VIENEU_HOST, VIENEU_PORT);
+#else
+  Serial.println("[TTS] Nguon: Google Translate TTS");
+#endif
 
   // Web server
   server.on("/", handleRoot);
@@ -91,7 +128,7 @@ void loop() {
   if (!audio.isRunning() && !speechQueue.empty()) {
     String chunk = speechQueue.front();
     speechQueue.pop();
-    audio.connecttospeech(chunk.c_str(), TTS_LANG);
+    speakChunk(chunk);
   }
 }
 

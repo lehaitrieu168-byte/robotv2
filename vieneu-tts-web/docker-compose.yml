@@ -12,6 +12,8 @@ services:
     environment:
       VIENEU_PRECISION: "int8"
       ENABLE_CLONING: "true"
+      # Bật để robot ESP32 gọi lần đầu không bị chờ nạp model
+      PRELOAD_MODEL: "true"
       MAX_CHARS: "1000"
       HF_HOME: "/models"
     volumes:

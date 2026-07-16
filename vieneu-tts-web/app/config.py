@@ -29,6 +29,9 @@ class Settings:
     # Cloning cần PyTorch được cài; nếu chỉ chạy ONNX (không torch) thì tắt đi.
     enable_cloning: bool = _get_bool("ENABLE_CLONING", True)
 
+    # Nạp sẵn model lúc khởi động (nên bật khi demo với robot để request đầu không timeout)
+    preload_model: bool = _get_bool("PRELOAD_MODEL", False)
+
     # Giới hạn để tránh lạm dụng khi mở ra mạng
     max_chars: int = int(os.getenv("MAX_CHARS", "1000"))
     max_ref_seconds: int = int(os.getenv("MAX_REF_SECONDS", "30"))

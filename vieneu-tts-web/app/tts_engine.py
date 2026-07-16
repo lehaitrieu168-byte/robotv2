@@ -23,6 +23,7 @@ class TTSEngine:
 
     def __init__(self) -> None:
         self._model = None
+        self._default_voice: Optional[str] = None
         self._lock = threading.Lock()
         os.makedirs(settings.data_dir, exist_ok=True)
 
@@ -36,11 +37,24 @@ class TTSEngine:
                     self._model = Vieneu(precision=settings.precision)
         return self._model
 
+    def warmup(self) -> None:
+        """Nạp sẵn model (gọi lúc khởi động) để request đầu không bị chậm/timeout."""
+        self._ensure_loaded()
+
     def list_voices(self) -> list[dict]:
         """Danh sách giọng dựng sẵn: [{label, id}]."""
         model = self._ensure_loaded()
         voices = model.list_preset_voices()
         return [{"label": label, "id": voice_id} for label, voice_id in voices]
+
+    def default_voice(self) -> str:
+        """Lấy id giọng mặc định (giọng đầu tiên), có cache. Dùng khi robot không chỉ định giọng."""
+        if self._default_voice is None:
+            voices = self.list_voices()
+            if not voices:
+                raise RuntimeError("Model không có giọng dựng sẵn nào.")
+            self._default_voice = voices[0]["id"]
+        return self._default_voice
 
     def _to_wav_bytes(self, model, audio) -> bytes:
         """Ghi numpy audio ra WAV bytes qua API save() của chính model (đúng sample rate)."""
