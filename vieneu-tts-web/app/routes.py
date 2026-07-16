@@ -74,7 +74,23 @@ def say(text: str, voice: str = "", style: str = "") -> Response:
     return Response(content=wav, media_type="audio/wav")
 
 
-def _run_chat(user_text: str) -> Response:
+def _resample_wav(wav_bytes: bytes, target_sr: int) -> bytes:
+    """Đổi WAV về mono + tần số target_sr (cho robot phát ở 16kHz)."""
+    import io
+    import soundfile as sf
+    import soxr
+
+    data, sr = sf.read(io.BytesIO(wav_bytes), dtype="float32")
+    if getattr(data, "ndim", 1) > 1:
+        data = data[:, 0]
+    if sr != target_sr:
+        data = soxr.resample(data, sr, target_sr)
+    out = io.BytesIO()
+    sf.write(out, data, target_sr, format="WAV", subtype="PCM_16")
+    return out.getvalue()
+
+
+def _run_chat(user_text: str, target_sr: int | None = None) -> Response:
     """LLM nghĩ câu trả lời -> VieNeu-TTS đọc -> trả WAV. Kèm text ở header (URL-encode)."""
     user_text = (user_text or "").strip()
     if not user_text:
@@ -88,6 +104,8 @@ def _run_chat(user_text: str) -> Response:
     print(f"[CHAT] Ban: {user_text}\n[CHAT] EMO: {reply}", flush=True)
     try:
         wav = engine.synthesize(reply, engine.default_voice(), None)
+        if target_sr:
+            wav = _resample_wav(wav, target_sr)
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Lỗi tổng hợp giọng: {exc}")
     return Response(
@@ -111,13 +129,26 @@ async def chat_audio(audio: UploadFile = File(...)) -> Response:
         user_text = chat_brain.transcribe(raw, audio.filename or "speech.wav")
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"Lỗi nhận dạng giọng: {exc}")
-    return _run_chat(user_text)
+    # Robot phát ở 16kHz -> resample câu trả lời về 16kHz mono
+    return _run_chat(user_text, target_sr=16000)
 
 
 @router.post("/chat-reset")
 def chat_reset() -> JSONResponse:
     _chat_history.clear()
     return JSONResponse({"status": "cleared"})
+
+
+@router.post("/stt")
+async def stt(audio: UploadFile = File(...)) -> JSONResponse:
+    """Chỉ nhận dạng giọng nói -> chữ (để KIỂM TRA mic robot có thu rõ không)."""
+    raw = await audio.read()
+    try:
+        text = chat_brain.transcribe(raw, audio.filename or "speech.wav")
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Lỗi STT: {exc}")
+    print(f"[STT] nhan {len(raw)} bytes -> \"{text}\"", flush=True)
+    return JSONResponse({"text": text, "bytes": len(raw)})
 
 
 @router.post("/tts")
