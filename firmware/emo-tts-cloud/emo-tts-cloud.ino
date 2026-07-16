@@ -9,6 +9,7 @@
 // ============================================================
 #include <WiFi.h>
 #include <WebServer.h>
+#include <HTTPClient.h>
 #include <queue>
 #include "Audio.h"          // ESP32-audioI2S (schreibfaul1) — cài qua Library Manager
 #include "config.h"
@@ -16,11 +17,14 @@
 
 Audio audio;
 WebServer server(80);
-std::queue<String> speechQueue;   // các đoạn ngắn, đọc lần lượt cho liền mạch
+
+// Mỗi đoạn cần đọc kèm theo giọng (voice) muốn dùng. voice rỗng = giọng mặc định.
+struct Utterance { String text; String voice; };
+std::queue<Utterance> speechQueue;   // các đoạn ngắn, đọc lần lượt cho liền mạch
 
 // Chia text dài thành đoạn <= TTS_CHUNK_MAX byte.
 // Chỉ cắt ở khoảng trắng / dấu câu (ký tự ASCII) nên KHÔNG làm vỡ ký tự tiếng Việt UTF-8.
-void enqueueText(const String& text) {
+void enqueueText(const String& text, const String& voice) {
   int start = 0, n = text.length();
   while (start < n) {
     int end = start + TTS_CHUNK_MAX;
@@ -36,7 +40,7 @@ void enqueueText(const String& text) {
     }
     String chunk = text.substring(start, end);
     chunk.trim();
-    if (chunk.length() > 0) speechQueue.push(chunk);
+    if (chunk.length() > 0) speechQueue.push({chunk, voice});
     start = end;
   }
 }
@@ -59,24 +63,40 @@ String urlEncode(const String& s) {
   return out;
 }
 
-// Phát một đoạn text: qua server VieNeu-TTS (stream WAV) hoặc Google TTS.
-void speakChunk(const String& chunk) {
+// Phát một đoạn text bằng giọng cho trước: qua server VieNeu-TTS hoặc Google TTS.
+void speakChunk(const String& text, const String& voice) {
 #if USE_VIENEU
+  String v = voice.length() ? voice : String(VIENEU_VOICE);
   String url = String("http://") + VIENEU_HOST + ":" + VIENEU_PORT +
-               "/api/say?voice=" + urlEncode(VIENEU_VOICE) +
-               "&text=" + urlEncode(chunk);
+               "/api/say?voice=" + urlEncode(v) + "&text=" + urlEncode(text);
   audio.connecttohost(url.c_str());
 #else
-  audio.connecttospeech(chunk.c_str(), TTS_LANG);
+  audio.connecttospeech(text.c_str(), TTS_LANG);
 #endif
 }
 
 void handleRoot() { server.send_P(200, "text/html; charset=utf-8", INDEX_HTML); }
 
+// Proxy danh sách giọng từ server VieNeu-TTS -> trang web robot (same-origin, khỏi CORS).
+void handleVoices() {
+#if USE_VIENEU
+  HTTPClient http;
+  String url = String("http://") + VIENEU_HOST + ":" + VIENEU_PORT + "/api/voices";
+  http.begin(url);
+  int code = http.GET();
+  String body = (code == 200) ? http.getString() : String("{\"voices\":[]}");
+  http.end();
+  server.send(code == 200 ? 200 : 502, "application/json; charset=utf-8", body);
+#else
+  server.send(200, "application/json; charset=utf-8", "{\"voices\":[]}");
+#endif
+}
+
 void handleSay() {
   if (!server.hasArg("text")) { server.send(400, "text/plain; charset=utf-8", "Thiếu tham số text"); return; }
-  String text = server.arg("text");           // đã được URL-decode về UTF-8
-  enqueueText(text);
+  String text  = server.arg("text");           // đã được URL-decode về UTF-8
+  String voice = server.hasArg("voice") ? server.arg("voice") : String("");
+  enqueueText(text, voice);
   server.send(200, "text/plain; charset=utf-8", "OK, đang đọc: " + text);
 }
 
@@ -113,11 +133,12 @@ void setup() {
   // Web server
   server.on("/", handleRoot);
   server.on("/say", handleSay);
+  server.on("/voices", handleVoices);
   server.on("/stop", handleStop);
   server.begin();
 
-  // Câu chào lúc khởi động để kiểm tra loa ngay
-  enqueueText("Xin chào, tôi là EMO. Hãy gõ chữ để tôi đọc.");
+  // Câu chào lúc khởi động để kiểm tra loa ngay (giọng mặc định)
+  enqueueText("Xin chào, tôi là EMO. Hãy gõ chữ để tôi đọc.", "");
 }
 
 void loop() {
@@ -126,9 +147,9 @@ void loop() {
 
   // Đọc xong đoạn hiện tại thì lấy đoạn kế trong hàng đợi
   if (!audio.isRunning() && !speechQueue.empty()) {
-    String chunk = speechQueue.front();
+    Utterance u = speechQueue.front();
     speechQueue.pop();
-    speakChunk(chunk);
+    speakChunk(u.text, u.voice);
   }
 }
 

@@ -26,8 +26,8 @@
 
 // ---- Server VieNeu-TTS (dùng khi USE_VIENEU = 1) ----
 // IP của máy/VPS đang chạy `docker compose up` trong thư mục vieneu-tts-web.
-// Robot và máy chủ phải cùng mạng LAN.
-#define VIENEU_HOST "192.168.1.10"
+// Robot và máy chủ phải cùng mạng LAN. (Đã điền sẵn IP máy bạn — đổi nếu IP thay đổi.)
+#define VIENEU_HOST "192.168.2.13"
 #define VIENEU_PORT 8000
 // Giọng: để trống "" = giọng mặc định của server.
 // Xem danh sách id giọng tại: http://VIENEU_HOST:VIENEU_PORT/api/voices

@@ -14,6 +14,7 @@ venv/
 data/
 models/
 *.wav
+*.log
 !app/static/**
 
 # IDE / OS
