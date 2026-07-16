@@ -1,0 +1,11 @@
+# Web backend
+fastapi>=0.110
+uvicorn[standard]>=0.29
+python-multipart>=0.0.9
+
+# Model TTS tiếng Việt (CPU chạy torch-free qua ONNX Runtime)
+vieneu
+
+# Ghi chú: Voice cloning cần thêm PyTorch. Xem README (mục Docker / GPU)
+# hoặc cài thủ công:
+#   pip install torch torchaudio --index-url https://download.pytorch.org/whl/cpu

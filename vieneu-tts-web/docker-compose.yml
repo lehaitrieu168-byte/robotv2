@@ -1,0 +1,24 @@
+services:
+  vieneu-tts:
+    build:
+      context: .
+      args:
+        # Đặt "false" nếu chỉ cần giọng dựng sẵn (image nhẹ hơn, không cài PyTorch)
+        ENABLE_CLONING: "true"
+    image: vieneu-tts-web:latest
+    container_name: vieneu-tts-web
+    ports:
+      - "8000:8000"
+    environment:
+      VIENEU_PRECISION: "int8"
+      ENABLE_CLONING: "true"
+      MAX_CHARS: "1000"
+      HF_HOME: "/models"
+    volumes:
+      # Lưu cache model để lần sau khởi động không phải tải lại
+      - vieneu-models:/models
+      - ./data:/app/data
+    restart: unless-stopped
+
+volumes:
+  vieneu-models:

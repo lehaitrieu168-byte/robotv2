@@ -1,0 +1,23 @@
+# Secrets — KHÔNG BAO GIỜ commit
+.env
+*.key
+secrets/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+
+# Dữ liệu runtime & cache model
+data/
+models/
+*.wav
+!app/static/**
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

@@ -1,0 +1,33 @@
+"""Điểm khởi tạo FastAPI: mount API + phục vụ giao diện web tĩnh."""
+from __future__ import annotations
+
+import os
+
+from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
+
+from .config import settings
+from .routes import router
+
+app = FastAPI(title="VieNeu-TTS Web", version="1.0.0")
+app.include_router(router)
+
+# Phục vụ frontend tĩnh tại "/" (index.html, style.css, app.js)
+_STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
+app.mount("/", StaticFiles(directory=_STATIC_DIR, html=True), name="static")
+
+
+def main() -> None:
+    """Chạy trực tiếp: python -m app.main"""
+    import uvicorn
+
+    uvicorn.run(
+        "app.main:app",
+        host=settings.host,
+        port=settings.port,
+        reload=False,
+    )
+
+
+if __name__ == "__main__":
+    main()
